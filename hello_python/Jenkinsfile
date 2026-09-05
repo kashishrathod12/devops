@@ -1,0 +1,86 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_IP = '16.171.182.118'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    ./venv/bin/pip install --upgrade pip
+                    ./venv/bin/pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    ./venv/bin/pytest -v --cov=. --cov-report=xml
+                '''
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    withEnv(["PATH+SONAR=${tool 'SonarScanner'}/bin"]) {
+                        sh '''
+                            sonar-scanner \
+                              -Dsonar.projectKey=hello-python \
+                              -Dsonar.projectName=hello-python \
+                              -Dsonar.sources=. \
+                              -Dsonar.tests=test_app.py \
+                              -Dsonar.python.version=3 \
+                              -Dsonar.python.coverage.reportPaths=coverage.xml \
+                              -Dsonar.exclusions=venv/**,coverage.xml
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sshagent(credentials: ['aws-app-ssh']) {
+
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                          "mkdir -p ~/app"
+
+                        scp -o StrictHostKeyChecking=no \
+                          app.py requirements.txt \
+                          ubuntu@$APP_IP:~/app/
+
+                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                          "cd ~/app && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt"
+
+                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                          "pkill -f 'python.*app.py' || true"
+
+                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                          "cd ~/app && nohup ./venv/bin/python app.py > app.log 2>&1 &"
+                    '''
+                }
+            }
+        }
+    }
+}
