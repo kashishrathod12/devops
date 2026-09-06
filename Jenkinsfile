@@ -62,25 +62,25 @@ pipeline {
             steps {
                 sshagent(credentials: ['aws-app-ssh']) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@$APP_IP \
                           "mkdir -p ~/app"
         
-                        scp -o StrictHostKeyChecking=no \
+                        scp -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
                           app.py requirements.txt \
                           ubuntu@$APP_IP:~/app/
         
-                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@$APP_IP \
                           "cd ~/app && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt"
         
-                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@$APP_IP \
                           "if [ -f ~/app/app.pid ]; then kill \\$(cat ~/app/app.pid) 2>/dev/null || true; rm -f ~/app/app.pid; fi"
         
-                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
-                          "cd ~/app && nohup ./venv/bin/python app.py > app.log 2>&1 </dev/null & echo \\$! > app.pid"
+                        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                          "cd ~/app && nohup ./venv/bin/python app.py </dev/null >app.log 2>&1 & echo \\$! > app.pid"
         
                         sleep 3
         
-                        ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
+                        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@$APP_IP \
                           "curl -f http://localhost:8080/health"
                     '''
                 }
