@@ -39,7 +39,7 @@ pipeline {
                             sonar-scanner \
                               -Dsonar.projectKey=hello-python \
                               -Dsonar.projectName=hello-python \
-                              -Dsonar.sources=. \
+                              -Dsonar.sources=app.py \
                               -Dsonar.tests=test_app.py \
                               -Dsonar.python.version=3 \
                               -Dsonar.python.coverage.reportPaths=coverage.xml \
