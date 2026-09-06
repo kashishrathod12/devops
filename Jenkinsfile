@@ -76,7 +76,7 @@ pipeline {
                           "if [ -f ~/app/app.pid ]; then kill \\$(cat ~/app/app.pid) 2>/dev/null || true; rm -f ~/app/app.pid; fi"
         
                         ssh -o StrictHostKeyChecking=no ubuntu@$APP_IP \
-                          "cd ~/app && nohup ./venv/bin/python app.py > app.log 2>&1 & echo \\$! > app.pid"
+                          "cd ~/app && nohup ./venv/bin/python app.py > app.log 2>&1 </dev/null & echo \\$! > app.pid"
         
                         sleep 3
         
