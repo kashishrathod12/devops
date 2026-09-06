@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        APP_IP = '16.171.182.118'
+        APP_IP = '13.60.191.230'
     }
 
     stages {
